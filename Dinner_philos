@@ -4,13 +4,13 @@
 #include<unistd.h>
 #include<pthread.h>
 
-#define N 5;
-#define left_ID ((ID - 1) % 5);
-#define right_ID ((ID + 1) % 5);
+#define N 5
+#define left_ID ((ID - 1) % 5)
+#define right_ID ((ID + 1) % 5)
 
 typedef enum PHI_STATE {THINK, EAT, HUNGRY} phi_state;
 sem_t muTax;                  /* For Mutual Exclusion */
-sem_t synchro[N];              /* The semaphore for each philosophers.*/
+sem_t synchro[5];              /* The semaphore for each philosophers.*/
 phi_state action[N];          /* The current action of those five philosophers.*/
 int philo_num[N] = {0, 1, 2, 3, 4}; /* Philos' ID*/
 
@@ -37,7 +37,7 @@ void get_fork(int ID)
 void put_fork(int ID)
 {
 	/* Lock */
-	sem_wait(muTax);
+	sem_wait(&muTax);
 	action[ID] = THINK;           /*Go back to think when finish*/
 
 	/* set neighbors' semaphore variable to be able to sem_wait()*/
@@ -45,10 +45,10 @@ void put_fork(int ID)
 	check(right_ID);
 		
 	/* Release */
-	sem_post(muTax);
+	sem_post(&muTax);
 }
 
-void philo_action(void* id)
+void* philo_action(void* id)
 {
 	int* ID = (int*)id;
 
@@ -61,11 +61,13 @@ void philo_action(void* id)
 		/*Get*/
 		get_fork(*ID);
 		/*Eat*/
-		print("Philosopher %d is now eating.", *ID);
+		printf("Philosopher %d is now eating.", *ID);
 		sleep(eat_time);
 		/*Put*/
 		put_fork(*ID);
 	}
+	
+	return NULL;
 }
 
 /* The main function for start everything. */
@@ -95,11 +97,13 @@ int main(int argc, char *argv[])
 	for(int i = 0; i < N; i++)
 	{	
 		/* Philos should identify their ID */
-		pthread_create_err = pthread_create(&philo[i], NULL, philo_action, &philo_num[i]);
+		pthread_create_err = pthread_create(&philo[i], NULL, &philo_action, &philo_num[i]);
 		if(pthread_create_err != 0)	/* When initialize the thread unsuccessfully. */
 		{
 			perror("pthread_create()");
 		}
 		
 	}
+	
+
 }
